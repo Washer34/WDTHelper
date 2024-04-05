@@ -5,47 +5,27 @@ import pyautogui
 import numpy as np
 import keyboard
 from threading import Thread
+from time import sleep
 
 is_mapping_key = False
-key_mapping = {}
+actions = []
+is_paused = False
 
-def load_config():
-    try:
-        with open('config.json', 'r') as config_file:
-            return json.load(config_file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+def monitor_ctrl_and_click(image_path):
+    global is_paused
+    while True:
+        if keyboard.is_pressed('ctrl') and not is_paused:
+            # Position initiale du curseur avant le clic
+            original_position = pyautogui.position()
+            
+            # Trouver et maintenir le clic sur l'image
+            find_and_hold_click(image_path)
+            
+            # Après avoir relâché le bouton, replacer le curseur à sa position originale
+            pyautogui.moveTo(original_position)
+        sleep(0.1)
 
-def save_config():
-    with open('config.json', 'w') as config_file:
-        json.dump(key_mapping, config_file)
-
-def begin_key_mapping():
-    global is_mapping_key
-    is_mapping_key = True
-    print("Press the key you want to map for 'prêt' action...")
-
-    Thread(target=wait_for_key).start()
-
-def wait_for_key():
-    global is_mapping_key
-    key = keyboard.read_event(suppress=True)
-    if key.event_type == keyboard.KEY_DOWN and is_mapping_key:
-        key_mapping['prêt'] = key.name
-        save_config()
-        update_button_text()
-        is_mapping_key = False
-        setup_global_key_listener()
-
-def update_button_text():
-    current_key = key_mapping.get('prêt', 'Mapper une touche')
-    mapping_button.config(text=f"Prêt: {current_key}")
-
-def setup_global_key_listener():
-    if 'prêt' in key_mapping:
-        keyboard.add_hotkey(key_mapping['prêt'], lambda: find_and_click_button("Images/btn_ready.png"), suppress=True)
-
-def find_and_click_button(image_path):
+def find_and_hold_click(image_path):
     screenshot = pyautogui.screenshot()
     screen = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
     screen_gray = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
@@ -59,32 +39,143 @@ def find_and_click_button(image_path):
         button_image_gray = cv2.cvtColor(button_image, cv2.COLOR_BGR2GRAY)
     else:
         button_image_gray = button_image
-    
+
     result = cv2.matchTemplate(screen_gray, button_image_gray, cv2.TM_CCOEFF_NORMED)
     _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+    if max_val > 0.8:
+        button_center = (max_loc[0] + button_image.shape[1] // 2, max_loc[1] + button_image.shape[0] // 2)
+        pyautogui.moveTo(button_center[0], button_center[1])
+        pyautogui.mouseDown()
+        while keyboard.is_pressed('ctrl'):  # Maintenir le clic tant que Ctrl est pressé
+            sleep(0.1)
+        pyautogui.mouseUp()
+
+def load_config():
+    try:
+        with open('config.json', 'r') as config_file:
+            return json.load(config_file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def save_config():
+    with open('config.json', 'w') as config_file:
+        json.dump(actions, config_file, indent=4)
+
+def add_action():
+    action_name = action_name_entry.get()
+    if action_name and all(action['name'] != action_name for action in actions):
+        actions.append({'name': action_name, 'key': 'Mapper une touche'})
+        update_ui()
+        save_config()
+
+def begin_key_mapping(action):
+    global is_mapping_key
+    if is_paused:
+        return
+    is_mapping_key = True
+    print(f"Press the key you want to map for '{action['name']}' action...")
+    Thread(target=lambda: wait_for_key(action)).start()
+
+def wait_for_key(action):
+    global is_mapping_key
+    key = keyboard.read_event(suppress=True)
+    if key.event_type == keyboard.KEY_DOWN and is_mapping_key:
+        action['key'] = key.name
+        save_config()
+        update_ui()
+        is_mapping_key = False
+        setup_global_key_listener()
+
+def setup_global_key_listener():
+    for action in actions:
+        if action['key'] != 'Mapper une touche':
+            keyboard.add_hotkey(action['key'], lambda a=action: find_and_click_button(f"Images/{a['name']}.png"), suppress=True)
+    keyboard.add_hotkey('esc', toggle_pause)  # Ajout d'un raccourci global pour mettre en pause
+    keyboard.add_hotkey('space', lambda: find_and_click_button("Images/ready.png", "Images/end_of_turn.png"), suppress=True)
+
+def toggle_pause():
+    global is_paused
+    is_paused = not is_paused
+    pause_label.config(text="État: Pause" if is_paused else "État: Actif")  # Mise à jour de l'étiquette de pause
+
+def find_and_click_button(image_path, alternative_image_path=None):
+    if is_paused:
+        return
+    screenshot = pyautogui.screenshot()
+    screen = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+    screen_gray = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
     
+    button_image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+    matched = match_and_click(button_image, screen_gray)
+    
+    if not matched and alternative_image_path:
+        button_image = cv2.imread(alternative_image_path, cv2.IMREAD_UNCHANGED)
+        match_and_click(button_image, screen_gray)
+    
+def match_and_click(button_image, screen_gray):
+    if button_image is None:
+        print("Erreur lors de la lecture de l'image du bouton. Vérifiez le chemin.")
+        return False
+
+    if len(button_image.shape) == 3:
+        button_image_gray = cv2.cvtColor(button_image, cv2.COLOR_BGR2GRAY)
+    else:
+        button_image_gray = button_image
+
+    result = cv2.matchTemplate(screen_gray, button_image_gray, cv2.TM_CCOEFF_NORMED)
+    _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
     if max_val > 0.8:
         print("Bouton trouvé avec une correspondance de :", max_val)
+        
+        # Enregistrer la position actuelle du curseur
+        original_position = pyautogui.position()
+        
         button_center = (max_loc[0] + button_image.shape[1] / 2, max_loc[1] + button_image.shape[0] / 2)
         pyautogui.click(int(button_center[0]), int(button_center[1]))
-        print(f"Tentative de clic à : {button_center}")
+        
+        # Replacer le curseur à sa position originale
+        pyautogui.moveTo(original_position)
+        
+        print(f"Tentative de clic à : {button_center} et retour à la position {original_position}")
+        return True
     else:
         print("Bouton non trouvé.")
+        return False
+
+def update_ui():
+    for widget in action_frame.winfo_children():
+        widget.destroy()
+    for action in actions:
+        tk.Label(action_frame, text=f"{action['name']} - {action['key']}").pack()
+        tk.Button(action_frame, text=f"Mapper {action['name']}", command=lambda a=action: begin_key_mapping(a)).pack()
 
 def main():
-    global key_mapping
-    key_mapping = load_config()
+    global actions, pause_label
+    actions = load_config()
+    
+    Thread(target=monitor_ctrl_and_click, args=("Images/mobs.png",), daemon=True).start()
 
     global root
     root = tk.Tk()
     root.title("WasherHelper")
     root.geometry("400x300")
 
-    global mapping_button
-    mapping_button = tk.Button(root, text="Mapper une touche", command=begin_key_mapping)
-    mapping_button.pack()
+    global action_name_entry
+    action_name_entry = tk.Entry(root)
+    action_name_entry.pack()
 
-    update_button_text()
+    tk.Button(root, text="Ajouter une action", command=add_action).pack()
+    
+    pause_label = tk.Label(root, text="État: Actif")
+    pause_label.pack()
+
+    global action_frame
+    action_frame = tk.Frame(root)
+    action_frame.pack()
+
+    update_ui()
     setup_global_key_listener()
 
     root.mainloop()
