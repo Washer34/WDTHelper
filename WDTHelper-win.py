@@ -6,6 +6,7 @@ import numpy as np
 import keyboard
 from threading import Thread
 from time import sleep
+import random
 
 is_mapping_key = False
 actions = []
@@ -129,16 +130,23 @@ def match_and_click(button_image, screen_gray):
     if max_val > 0.8:
         print("Bouton trouvé avec une correspondance de :", max_val)
         
+        # Calculer le centre de l'image
+        center_x = max_loc[0] + button_image.shape[1] // 2
+        center_y = max_loc[1] + button_image.shape[0] // 2
+        
+        # Ajouter une variation aléatoire à la position du clic
+        random_x = center_x + random.randint(-10, 10)  # Ajustez ces valeurs selon la taille de l'image
+        random_y = center_y + random.randint(-10, 10)
+        
         # Enregistrer la position actuelle du curseur
         original_position = pyautogui.position()
         
-        button_center = (max_loc[0] + button_image.shape[1] / 2, max_loc[1] + button_image.shape[0] / 2)
-        pyautogui.click(int(button_center[0]), int(button_center[1]))
+        pyautogui.click(random_x, random_y)
         
         # Replacer le curseur à sa position originale
         pyautogui.moveTo(original_position)
         
-        print(f"Tentative de clic à : {button_center} et retour à la position {original_position}")
+        print(f"Tentative de clic à : ({random_x}, {random_y}) et retour à la position {original_position}")
         return True
     else:
         print("Bouton non trouvé.")
