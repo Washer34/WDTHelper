@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import filedialog
 import json
 import cv2
 import pyautogui
@@ -12,17 +13,27 @@ is_mapping_key = False
 actions = []
 is_paused = False
 
+def load_config_dialog():
+    global actions
+    filename = filedialog.askopenfilename(initialdir="/", title="Select file",
+                                            filetypes=(("json files", "*.json"), ("all files", "*.*")))
+    if filename:
+        try:
+            with open(filename, 'r') as config_file:
+                actions = json.load(config_file)
+                update_ui()
+                print("Configuration chargée avec succès !")
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Erreur lors du chargement du fichier de configuration : {e}")
+
 def monitor_ctrl_and_click(image_path):
     global is_paused
     while True:
         if keyboard.is_pressed('ctrl') and not is_paused:
-            # Position initiale du curseur avant le clic
             original_position = pyautogui.position()
             
-            # Trouver et maintenir le clic sur l'image
             find_and_hold_click(image_path)
             
-            # Après avoir relâché le bouton, replacer le curseur à sa position originale
             pyautogui.moveTo(original_position)
         sleep(0.1)
 
@@ -48,7 +59,7 @@ def find_and_hold_click(image_path):
         button_center = (max_loc[0] + button_image.shape[1] // 2, max_loc[1] + button_image.shape[0] // 2)
         pyautogui.moveTo(button_center[0], button_center[1])
         pyautogui.mouseDown()
-        while keyboard.is_pressed('ctrl'):  # Maintenir le clic tant que Ctrl est pressé
+        while keyboard.is_pressed('ctrl'):
             sleep(0.1)
         pyautogui.mouseUp()
 
@@ -92,13 +103,13 @@ def setup_global_key_listener():
     for action in actions:
         if action['key'] != 'Mapper une touche':
             keyboard.add_hotkey(action['key'], lambda a=action: find_and_click_button(f"Images/{a['name']}.png"), suppress=True)
-    keyboard.add_hotkey('esc', toggle_pause)  # Ajout d'un raccourci global pour mettre en pause
+    keyboard.add_hotkey('esc', toggle_pause)
     keyboard.add_hotkey('space', lambda: find_and_click_button("Images/ready.png", "Images/end_of_turn.png"), suppress=True)
 
 def toggle_pause():
     global is_paused
     is_paused = not is_paused
-    pause_label.config(text="État: Pause" if is_paused else "État: Actif")  # Mise à jour de l'étiquette de pause
+    pause_label.config(text="État: Pause" if is_paused else "État: Actif")
 
 def find_and_click_button(image_path, alternative_image_path=None):
     if is_paused:
@@ -130,20 +141,16 @@ def match_and_click(button_image, screen_gray):
     if max_val > 0.8:
         print("Bouton trouvé avec une correspondance de :", max_val)
         
-        # Calculer le centre de l'image
         center_x = max_loc[0] + button_image.shape[1] // 2
         center_y = max_loc[1] + button_image.shape[0] // 2
         
-        # Ajouter une variation aléatoire à la position du clic
         random_x = center_x + random.randint(-10, 10)  # Ajustez ces valeurs selon la taille de l'image
         random_y = center_y + random.randint(-10, 10)
         
-        # Enregistrer la position actuelle du curseur
         original_position = pyautogui.position()
         
         pyautogui.click(random_x, random_y)
         
-        # Replacer le curseur à sa position originale
         pyautogui.moveTo(original_position)
         
         print(f"Tentative de clic à : ({random_x}, {random_y}) et retour à la position {original_position}")
@@ -170,6 +177,8 @@ def main():
     root.title("WasherHelper")
     root.geometry("400x300")
 
+    tk.Button(root, text="Charger une configuration", command=load_config_dialog).pack()
+    
     global action_name_entry
     action_name_entry = tk.Entry(root)
     action_name_entry.pack()
