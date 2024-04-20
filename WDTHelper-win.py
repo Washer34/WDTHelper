@@ -108,12 +108,22 @@ def begin_key_mapping(action):
     if is_paused or is_mapping_key:
         return
     is_mapping_key = True
-    new_key = simpledialog.askstring("Key Mapping", f"Press new key for action '{action['name']}':", parent=root)
-    if new_key:
-        action['key'] = new_key
+    key_window = tk.Toplevel(root)
+    key_window.title("Press a Key")
+    key_label = ttk.Label(key_window, text="Press the key you want to map for '{}' action:".format(action['name']))
+    key_label.pack(padx=20, pady=20)
+    
+    def on_key_press(event):
+        global is_mapping_key
+        action['key'] = event.keysym
         save_config()
         update_ui()
-    is_mapping_key = False
+        is_mapping_key = False
+        key_window.destroy()
+
+    key_window.bind("<KeyPress>", on_key_press)
+    key_window.grab_set()
+    key_window.focus_force()
 
 def wait_for_key(action):
     global is_mapping_key
@@ -253,17 +263,6 @@ def delete_action():
         actions = [action for action in actions if action['name'] != action_name]
         save_config()
         update_ui()
-
-def on_treeview_click(event):
-    region = action_treeview.identify("region", event.x, event.y)
-    if region == "cell":
-        item_id = action_treeview.identify_row(event.y)
-        item = action_treeview.item(item_id)
-        action_name = item['values'][0]
-        if item['values'][1] == 'Mapper une touche':
-            action = next((a for a in actions if a['name'] == action_name), None)
-            if action:
-                begin_key_mapping(action)
 
 def update_ui():
     action_treeview.delete(*action_treeview.get_children())

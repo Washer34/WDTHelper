@@ -8,10 +8,6 @@
         "key": "c"
     },
     {
-        "name": "eni_lapino",
-        "key": "'"
-    },
-    {
         "name": "eni_spell0",
         "key": "\u00b2"
     },
@@ -30,5 +26,13 @@
     {
         "name": "bag",
         "key": "b"
+    },
+    {
+        "name": "eni_spell4",
+        "key": "apostrophe"
+    },
+    {
+        "name": "eni_lapino",
+        "key": "parenleft"
     }
 ]
