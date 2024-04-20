@@ -277,7 +277,7 @@ def main():
 
     root = tk.Tk()
     root.title("WasherHelper")
-    root.geometry("600x400")
+    root.geometry("650x400")
 
     style = ttk.Style()
     style.configure("TButton", font=('Helvetica', 12, 'bold'), borderwidth='4')
