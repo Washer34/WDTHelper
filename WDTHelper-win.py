@@ -174,12 +174,10 @@ def find_and_click_button(image_path, alternative_image_path=None):
     screen_gray = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
     
     button_image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-    matched = match_and_click(button_image, screen_gray)
-    
-    if not matched and alternative_image_path:
+    if not match_and_click(button_image, screen_gray) and alternative_image_path:
         button_image = cv2.imread(alternative_image_path, cv2.IMREAD_UNCHANGED)
         match_and_click(button_image, screen_gray)
-    
+
 def match_and_click(button_image, screen_gray):
     if button_image is None:
         print("Erreur lors de la lecture de l'image du bouton. Vérifiez le chemin.")
@@ -204,11 +202,13 @@ def match_and_click(button_image, screen_gray):
         
         original_position = pyautogui.position()
         
-        pyautogui.click(random_x, random_y)
+        pyautogui.moveTo(random_x, random_y)
         
+        sleep(0.01)
+        
+        pyautogui.click()
         pyautogui.moveTo(original_position)
-        
-        print(f"Tentative de clic à : ({random_x}, {random_y}) et retour à la position {original_position}")
+        print(f"Clic réussi à : ({random_x}, {random_y}) et retour à la position {original_position}")
         return True
     else:
         print("Bouton non trouvé.")

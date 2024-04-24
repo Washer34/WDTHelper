@@ -1,0 +1,5 @@
+Output/
+env/
+dist/
+build/
+compiler_script.iss
