@@ -1,0 +1,26 @@
+[
+    {
+        "name": "spells",
+        "key": "k"
+    },
+    {
+        "name": "stats",
+        "key": "c"
+    },
+    {
+        "name": "bag",
+        "key": "b"
+    },
+    {
+        "name": "feca_spell0",
+        "key": "twosuperior"
+    },
+    {
+        "name": "feca_spell1",
+        "key": "ampersand"
+    },
+    {
+        "name": "feca_spell2",
+        "key": "eacute"
+    }
+]

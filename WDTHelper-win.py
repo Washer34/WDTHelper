@@ -170,6 +170,7 @@ def find_and_click_button(image_path, alternative_image_path=None):
     if screenshot is None:
         print("Aucun screenshot disponible.")
         return
+
     screen = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
     screen_gray = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)
     
@@ -202,11 +203,8 @@ def match_and_click(button_image, screen_gray):
         
         original_position = pyautogui.position()
         
-        pyautogui.moveTo(random_x, random_y)
+        pyautogui.click(random_x, random_y)
         
-        sleep(0.01)
-        
-        pyautogui.click()
         pyautogui.moveTo(original_position)
         print(f"Clic réussi à : ({random_x}, {random_y}) et retour à la position {original_position}")
         return True

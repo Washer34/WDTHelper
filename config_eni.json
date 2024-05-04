@@ -1,0 +1,38 @@
+[
+    {
+        "name": "spells",
+        "key": "k"
+    },
+    {
+        "name": "stats",
+        "key": "c"
+    },
+    {
+        "name": "eni_spell0",
+        "key": "\u00b2"
+    },
+    {
+        "name": "eni_spell1",
+        "key": "&"
+    },
+    {
+        "name": "eni_spell2",
+        "key": "\u00e9"
+    },
+    {
+        "name": "eni_spell3",
+        "key": "\""
+    },
+    {
+        "name": "bag",
+        "key": "b"
+    },
+    {
+        "name": "eni_spell4",
+        "key": "apostrophe"
+    },
+    {
+        "name": "eni_lapino",
+        "key": "parenleft"
+    }
+]
